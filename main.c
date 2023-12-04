@@ -21,6 +21,13 @@ typedef struct {
     bool is_destroyed;
 } Block;
 
+typedef struct {
+    size_t score;
+    size_t destroyed_count; 
+    Vector2 ball_initial_pos;
+    Vector2 ball_speed;
+} Game;
+
 Block block_stack[BLOCK_COUNT];
 
 Entity init_entity(float x, float y, float width, float height) {
@@ -44,22 +51,28 @@ bool check_collision(Entity *e1, Entity *e2) {
     return false;
 }
 
-int main() {
-    Vector2 ball_speed = {
-        .x = SPEED - 0.15f,
-        .y = SPEED - 0.05f,
+Game init_game() {
+    Game game = {
+        .score = 0,
+        .destroyed_count = 0,
+        .ball_speed = {
+            .x = SPEED - 0.15f,
+            .y = SPEED - 0.05f,
+        },
+        .ball_initial_pos = {
+            .x = WIDTH/2,
+            .y = HEIGHT/2,
+        },
     };
+    return game;
+}
 
-    Vector2 ball_initial_pos = {
-        .x = WIDTH/2,
-        .y = HEIGHT/2,
-    };
+int main() {
+    Game game = init_game();
     
     InitWindow(WIDTH, HEIGHT, "breakout");
     Entity player = init_entity(WIDTH/2, HEIGHT - (HEIGHT/10), 100, 20);
-    Entity ball = init_entity(ball_initial_pos.x, ball_initial_pos.y, 20, 20);
-    int score = 0;
-    size_t destroyed_count = 0;
+    Entity ball = init_entity(game.ball_initial_pos.x, game.ball_initial_pos.y, 20, 20);
     size_t block_stack_pos = 0;
 
     for(size_t layers = 0; layers <= ITERATIONS; layers++) {
@@ -73,16 +86,19 @@ int main() {
     }
 
     while(!WindowShouldClose()) {
-        if(destroyed_count >= BLOCK_COUNT) return 1;
+        // crash if all blocks are destroyed
+        if(game.destroyed_count >= BLOCK_COUNT) return 1;
+
+        // block rendering and collision handling
         for(size_t i = 0; i < BLOCK_COUNT; i++) {
             Block *enemy = &block_stack[i];
             if(!enemy->is_destroyed) {
                 DrawRectangleV(enemy->entity.pos, enemy->entity.size, BLACK);
                 if(check_collision(&enemy->entity, &ball)) {
-                    destroyed_count++;
+                    game.destroyed_count++;
                     block_stack[i].is_destroyed = true; 
-                    score += 1;
-                    ball_speed.y = -ball_speed.y;
+                    game.score += 1;
+                    game.ball_speed.y = -game.ball_speed.y;
                 }
             }
         }
@@ -92,30 +108,30 @@ int main() {
         if(IsKeyDown(KEY_D) && player.pos.x < (WIDTH - player.size.x)) player.pos.x += (1 * SPEED);
 
         // ball speed
-        ball.pos.y += (1 * ball_speed.y);
-        ball.pos.x += (1 * ball_speed.x);
+        ball.pos.y += (1 * game.ball_speed.y);
+        ball.pos.x += (1 * game.ball_speed.x);
 
         // player ball collision
-        if(check_collision(&player, &ball)) ball_speed.y = -ball_speed.y;
+        if(check_collision(&player, &ball)) game.ball_speed.y = -game.ball_speed.y;
 
         // ball window collision
         if(ball.pos.y > HEIGHT) {
-            score -= 1; 
-            ball.pos.x = ball_initial_pos.x;
-            ball.pos.y = ball_initial_pos.y;
+            game.score -= 1; 
+            ball.pos.x = game.ball_initial_pos.x;
+            ball.pos.y = game.ball_initial_pos.y;
         }
-        if(ball.pos.y < 0) ball_speed.y *= -1; 
-        if(ball.pos.x > WIDTH) ball_speed.x *= -1; 
-        if(ball.pos.x < 0) ball_speed.x *= -1;
+        if(ball.pos.y < 0) game.ball_speed.y *= -1; 
+        if(ball.pos.x > WIDTH) game.ball_speed.x *= -1; 
+        if(ball.pos.x < 0) game.ball_speed.x *= -1;
 
         // init things
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(LIGHTGRAY);
         DrawRectangleV(player.pos, player.size, BLACK);
         DrawRectangleV(ball.pos, ball.size, BLACK);
         char *score_str = malloc(11);
-        sprintf(score_str, "Score: %d", score);
-        DrawText(score_str, 5, 0, 20, RED);
+        sprintf(score_str, "Score: %zu", game.score);
+        DrawText(score_str, 5, 0, 20, BLUE);
         EndDrawing();
     }
     CloseWindow();
