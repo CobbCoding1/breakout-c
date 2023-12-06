@@ -27,6 +27,7 @@ typedef struct {
 
 typedef struct {
     int score;
+    int high_score;
     size_t destroyed_count; 
     size_t bounce_wait;
     Vector2 ball_initial_pos;
@@ -35,6 +36,49 @@ typedef struct {
 } Game;
 
 Block block_stack[BLOCK_COUNT];
+
+char *read_from_file(char *file_name) {
+    FILE *file = fopen(file_name, "a");
+    fclose(file);
+    file = fopen(file_name, "r");
+    if(file == NULL) {
+        fprintf(stderr, "error: could not open file %s\n", file_name);
+        exit(1);
+    }
+    fseek(file, 0, SEEK_END);
+    int length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *current_score = malloc(sizeof(char) * length);
+    fread(current_score, 1, length, file);
+    current_score[length] = '\0';
+    fclose(file);
+    return current_score;
+}
+
+void write_to_file(char *file_name, int score) {
+    FILE *file = fopen(file_name, "r");
+    if(file == NULL) {
+        fprintf(stderr, "error: could not open file %s\n", file_name);
+        exit(1);
+    }
+    fseek(file, 0, SEEK_END);
+    int length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *current_score = malloc(sizeof(char) * length);
+    fread(current_score, 1, length, file);
+    current_score[length] = '\0';
+    fclose(file);
+    if(atoi(current_score) < score) {
+        file = fopen("highscore.txt", "w");
+        if(file == NULL) {
+            fprintf(stderr, "error: could not open file %s\n", file_name);
+            exit(1);
+        }
+        fprintf(file, "%d", score);
+    }
+    fclose(file);
+    free(current_score);
+}
 
 Entity init_entity(float x, float y, float width, float height) {
     Entity entity = {
@@ -84,6 +128,8 @@ float random_x() {
 }
 
 Game init_game() {
+    char *high_score = read_from_file("highscore.txt");
+    printf("%s\n", high_score);
     Game game = {
         .score = 0,
         .destroyed_count = 0,
@@ -96,6 +142,7 @@ Game init_game() {
             .y = HEIGHT/2,
         },
         .bounce_wait = 0,
+        .high_score = atoi(high_score),
     };
 
     reset_blocks();
@@ -120,6 +167,7 @@ int main() {
             printf("%f %f\n", font_size.x, font_size.y);
             DrawText("GAME OVER", WIDTH/2 - font_size.x/2, HEIGHT/2 - font_size.y/2, 100, BLUE);
             EndDrawing();
+            write_to_file("highscore.txt", game.score);
             reset_ball(&ball, &game);
             game = init_game();
             sleep(2);
@@ -191,8 +239,8 @@ int main() {
         ClearBackground(LIGHTGRAY);
         DrawRectangleV(player.pos, player.size, BLACK);
         DrawRectangleV(ball.pos, ball.size, BLACK);
-        char *score_str = malloc(11);
-        sprintf(score_str, "Score: %d", game.score);
+        char *score_str = malloc(45);
+        sprintf(score_str, "Score: %d   High Score: %d", game.score, game.high_score);
         DrawText(score_str, 5, 0, 20, BLUE);
         free(score_str);
         EndDrawing();
