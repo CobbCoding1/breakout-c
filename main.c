@@ -116,9 +116,13 @@ int main() {
         game.delta_time = GetFrameTime();
         // crash if all blocks are destroyed
         if(game.destroyed_count >= BLOCK_COUNT) {
+            Vector2 font_size = MeasureTextEx(GetFontDefault(), "GAME OVER", 100, 10.0f);
+            printf("%f %f\n", font_size.x, font_size.y);
+            DrawText("GAME OVER", WIDTH/2 - font_size.x/2, HEIGHT/2 - font_size.y/2, 100, BLUE);
+            EndDrawing();
             reset_ball(&ball, &game);
             game = init_game();
-            usleep(500 * 1000);
+            sleep(2);
         }
 
         // block rendering and collision handling
@@ -130,7 +134,7 @@ int main() {
                     game.destroyed_count++;
                     block_stack[i].is_destroyed = true; 
                     game.score += 1;
-                    game.ball_speed.y = -game.ball_speed.y;
+                    game.ball_speed.y = SPEED * 0.5;
                 }
             }
         }
