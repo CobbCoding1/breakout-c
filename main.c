@@ -188,9 +188,18 @@ int main() {
             }
         }
 
-        // Key presses
+
+        if(game.ball.pos.x < (0 - 25)) game.ball.pos.x = 0;
+        if(game.ball.pos.x > (WIDTH - game.ball.size.x + 25)) game.ball.pos.x = (WIDTH - game.ball.size.x);
+
+        if(game.ball.pos.y < (0 - 25)) game.ball.pos.y = 0;
+        if(game.ball.pos.y > (HEIGHT - game.ball.size.y + 25)) game.ball.pos.y = (HEIGHT - game.ball.size.y);
+
         if(game.player.pos.x < 0) game.player.pos.x = 0;
         if(game.player.pos.x > (WIDTH - game.player.size.x)) game.player.pos.x = (WIDTH - game.player.size.x);
+        // Key presses
+        //
+        //
         if(IsKeyDown(KEY_A)) game.player.pos.x -= PLAYER_SPEED * game.delta_time;
         if(IsKeyDown(KEY_D)) game.player.pos.x += PLAYER_SPEED * game.delta_time;
 
